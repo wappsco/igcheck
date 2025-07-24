@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -161,13 +162,13 @@
             transform: translateY(0);
         }
 
-        .result.available {
+        .result.valid {
             background: linear-gradient(45deg, #4CAF50, #45a049);
             color: white;
             box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
         }
 
-        .result.unavailable {
+        .result.invalid {
             background: linear-gradient(45deg, #f44336, #d32f2f);
             color: white;
             box-shadow: 0 5px 15px rgba(244, 67, 54, 0.3);
@@ -245,8 +246,8 @@
 <body>
     <div class="container">
         <div class="logo">📷</div>
-        <h1>Instagram Username Checker</h1>
-        <p class="subtitle">Cek ketersediaan username Instagram dengan mudah</p>
+        <h1>Instagram Username Validator</h1>
+        <p class="subtitle">Validasi apakah username Instagram valid dan exist</p>
         
         <div class="input-group">
             <div class="input-container">
@@ -255,14 +256,14 @@
             </div>
         </div>
         
-        <button class="check-btn" onclick="checkUsername()">
-            <span id="buttonText">Cek Username</span>
+        <button class="check-btn" onclick="validateUsername()">
+            <span id="buttonText">Validasi Username</span>
         </button>
         
         <div id="result" class="result"></div>
         
         <div id="suggestions" class="username-suggestions" style="display: none;">
-            <h3 style="margin-bottom: 15px; color: #333;">Saran Username:</h3>
+            <h3 style="margin-bottom: 15px; color: #333;">Informasi Profile:</h3>
             <div id="suggestionsList"></div>
         </div>
     </div>
@@ -272,7 +273,7 @@
 
         document.getElementById('usernameInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                checkUsername();
+                validateUsername();
             }
         });
 
@@ -281,7 +282,7 @@
             this.value = this.value.toLowerCase().replace(/[^a-z0-9._]/g, '');
         });
 
-        async function checkUsername() {
+        async function validateUsername() {
             if (isChecking) return;
             
             const username = document.getElementById('usernameInput').value.trim();
@@ -296,7 +297,7 @@
 
             // Validate username format
             if (!/^[a-z0-9._]{1,30}$/.test(username)) {
-                showResult('Username tidak valid! Gunakan huruf kecil, angka, titik, dan underscore saja.', 'error');
+                showResult('Format username tidak valid! Gunakan huruf kecil, angka, titik, dan underscore saja.', 'error');
                 return;
             }
 
@@ -315,30 +316,30 @@
                 const data = await response.json();
                 
                 if (response.ok && data.contents) {
-                    // Check if the page contains profile data or shows "user not found"
+                    // Check if the page contains profile data
                     const pageContent = data.contents.toLowerCase();
                     
                     if (pageContent.includes('"ProfilePage"') || 
                         pageContent.includes('"user"') || 
                         pageContent.includes('followers') ||
                         pageContent.includes('following') ||
-                        !pageContent.includes('page not found')) {
+                        pageContent.includes('biography') ||
+                        (pageContent.includes('instagram') && !pageContent.includes('page not found'))) {
                         
-                        showResult(`❌ Username "${username}" sudah digunakan!`, 'unavailable');
-                        generateSuggestions(username);
+                        showResult(`✅ Username "${username}" valid dan exist!`, 'valid');
+                        showProfileInfo(pageContent, username);
                     } else {
-                        showResult(`✅ Username "${username}" tersedia!`, 'available');
+                        showResult(`❌ Username "${username}" tidak valid atau tidak exist!`, 'invalid');
                     }
                 } else {
-                    // If we can't access the page, assume it might be available
-                    showResult(`✅ Username "${username}" kemungkinan tersedia!`, 'available');
+                    showResult('❌ Username tidak dapat divalidasi. Kemungkinan tidak exist.', 'invalid');
                 }
             } catch (error) {
-                console.error('Error checking username:', error);
-                showResult('Terjadi kesalahan saat mengecek username. Silakan coba lagi.', 'error');
+                console.error('Error validating username:', error);
+                showResult('Terjadi kesalahan saat memvalidasi username. Silakan coba lagi.', 'error');
             } finally {
                 isChecking = false;
-                buttonText.textContent = 'Cek Username';
+                buttonText.textContent = 'Validasi Username';
                 document.querySelector('.check-btn').disabled = false;
             }
         }
@@ -353,43 +354,39 @@
             }, 100);
         }
 
-        function generateSuggestions(originalUsername) {
-            const suggestions = [];
-            const currentYear = new Date().getFullYear();
-            
-            // Generate various suggestions
-            suggestions.push(`${originalUsername}_official`);
-            suggestions.push(`${originalUsername}.id`);
-            suggestions.push(`${originalUsername}${Math.floor(Math.random() * 999) + 1}`);
-            suggestions.push(`${originalUsername}_${currentYear}`);
-            suggestions.push(`the_${originalUsername}`);
-            suggestions.push(`${originalUsername}.ig`);
-            suggestions.push(`${originalUsername}_real`);
-            suggestions.push(`${originalUsername}${Math.floor(Math.random() * 99) + 10}`);
-            
-            displaySuggestions(suggestions);
-        }
-
-        function displaySuggestions(suggestions) {
+        function showProfileInfo(pageContent, username) {
             const suggestionsDiv = document.getElementById('suggestions');
             const suggestionsList = document.getElementById('suggestionsList');
             
             suggestionsList.innerHTML = '';
             
-            suggestions.forEach(suggestion => {
-                const item = document.createElement('div');
-                item.className = 'suggestion-item';
-                item.innerHTML = `
-                    <span>@${suggestion}</span>
-                    <button class="copy-btn" onclick="copyToClipboard('${suggestion}')">Salin</button>
+            // Create profile info items
+            const profileItems = [
+                { label: 'Username', value: `@${username}`, icon: '👤' },
+                { label: 'Profile URL', value: `https://instagram.com/${username}`, icon: '🔗' },
+                { label: 'Status', value: 'Profile Valid & Active', icon: '✅' },
+                { label: 'Platform', value: 'Instagram', icon: '📷' }
+            ];
+            
+            profileItems.forEach(item => {
+                const element = document.createElement('div');
+                element.className = 'suggestion-item';
+                element.innerHTML = `
+                    <span>${item.icon} <strong>${item.label}:</strong> ${item.value}</span>
+                    ${item.label === 'Profile URL' ? `<button class="copy-btn" onclick="copyToClipboard('${item.value}')">Salin URL</button>` : ''}
                 `;
-                item.addEventListener('click', () => {
-                    document.getElementById('usernameInput').value = suggestion;
-                });
-                suggestionsList.appendChild(item);
+                suggestionsList.appendChild(element);
             });
             
             suggestionsDiv.style.display = 'block';
+        }
+
+        function generateSuggestions(originalUsername) {
+            // This function is no longer needed for validation
+        }
+
+        function displaySuggestions(suggestions) {
+            // This function is no longer needed for validation
         }
 
         function copyToClipboard(text) {
