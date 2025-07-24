@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Username Checker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            border-radius: 20px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 15px 20px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .input-container:focus-within {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .prefix {
+            color: #666;
+            font-weight: 500;
+            margin-right: 5px;
+        }
+
+        #usernameInput {
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 16px;
+            flex: 1;
+            color: #333;
+        }
+
+        #usernameInput::placeholder {
+            color: #999;
+        }
+
+        .check-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .check-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .check-btn:active {
+            transform: translateY(0);
+        }
+
+        .check-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 16px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .result.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result.available {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .result.unavailable {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.3);
+        }
+
+        .result.error {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3);
+        }
+
+        .loader {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .username-suggestions {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .suggestion-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .suggestion-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background: #5a67d8;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">📷</div>
+        <h1>Instagram Username Checker</h1>
+        <p class="subtitle">Cek ketersediaan username Instagram dengan mudah</p>
+        
+        <div class="input-group">
+            <div class="input-container">
+                <span class="prefix">instagram.com/</span>
+                <input type="text" id="usernameInput" placeholder="masukkan username" maxlength="30">
+            </div>
+        </div>
+        
+        <button class="check-btn" onclick="checkUsername()">
+            <span id="buttonText">Cek Username</span>
+        </button>
+        
+        <div id="result" class="result"></div>
+        
+        <div id="suggestions" class="username-suggestions" style="display: none;">
+            <h3 style="margin-bottom: 15px; color: #333;">Saran Username:</h3>
+            <div id="suggestionsList"></div>
+        </div>
+    </div>
+
+    <script>
+        let isChecking = false;
+
+        document.getElementById('usernameInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkUsername();
+            }
+        });
+
+        document.getElementById('usernameInput').addEventListener('input', function(e) {
+            // Remove invalid characters and convert to lowercase
+            this.value = this.value.toLowerCase().replace(/[^a-z0-9._]/g, '');
+        });
+
+        async function checkUsername() {
+            if (isChecking) return;
+            
+            const username = document.getElementById('usernameInput').value.trim();
+            const resultDiv = document.getElementById('result');
+            const buttonText = document.getElementById('buttonText');
+            const suggestionsDiv = document.getElementById('suggestions');
+            
+            if (!username) {
+                showResult('Silakan masukkan username!', 'error');
+                return;
+            }
+
+            // Validate username format
+            if (!/^[a-z0-9._]{1,30}$/.test(username)) {
+                showResult('Username tidak valid! Gunakan huruf kecil, angka, titik, dan underscore saja.', 'error');
+                return;
+            }
+
+            isChecking = true;
+            buttonText.innerHTML = '<div class="loader"></div>';
+            document.querySelector('.check-btn').disabled = true;
+            
+            resultDiv.classList.remove('show');
+            suggestionsDiv.style.display = 'none';
+
+            try {
+                // Use a CORS proxy to check Instagram
+                const proxyUrl = 'https://api.allorigins.win/get?url=';
+                const instagramUrl = `https://instagram.com/${username}/`;
+                const response = await fetch(proxyUrl + encodeURIComponent(instagramUrl));
+                const data = await response.json();
+                
+                if (response.ok && data.contents) {
+                    // Check if the page contains profile data or shows "user not found"
+                    const pageContent = data.contents.toLowerCase();
+                    
+                    if (pageContent.includes('"ProfilePage"') || 
+                        pageContent.includes('"user"') || 
+                        pageContent.includes('followers') ||
+                        pageContent.includes('following') ||
+                        !pageContent.includes('page not found')) {
+                        
+                        showResult(`❌ Username "${username}" sudah digunakan!`, 'unavailable');
+                        generateSuggestions(username);
+                    } else {
+                        showResult(`✅ Username "${username}" tersedia!`, 'available');
+                    }
+                } else {
+                    // If we can't access the page, assume it might be available
+                    showResult(`✅ Username "${username}" kemungkinan tersedia!`, 'available');
+                }
+            } catch (error) {
+                console.error('Error checking username:', error);
+                showResult('Terjadi kesalahan saat mengecek username. Silakan coba lagi.', 'error');
+            } finally {
+                isChecking = false;
+                buttonText.textContent = 'Cek Username';
+                document.querySelector('.check-btn').disabled = false;
+            }
+        }
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${type}`;
+            
+            setTimeout(() => {
+                resultDiv.classList.add('show');
+            }, 100);
+        }
+
+        function generateSuggestions(originalUsername) {
+            const suggestions = [];
+            const currentYear = new Date().getFullYear();
+            
+            // Generate various suggestions
+            suggestions.push(`${originalUsername}_official`);
+            suggestions.push(`${originalUsername}.id`);
+            suggestions.push(`${originalUsername}${Math.floor(Math.random() * 999) + 1}`);
+            suggestions.push(`${originalUsername}_${currentYear}`);
+            suggestions.push(`the_${originalUsername}`);
+            suggestions.push(`${originalUsername}.ig`);
+            suggestions.push(`${originalUsername}_real`);
+            suggestions.push(`${originalUsername}${Math.floor(Math.random() * 99) + 10}`);
+            
+            displaySuggestions(suggestions);
+        }
+
+        function displaySuggestions(suggestions) {
+            const suggestionsDiv = document.getElementById('suggestions');
+            const suggestionsList = document.getElementById('suggestionsList');
+            
+            suggestionsList.innerHTML = '';
+            
+            suggestions.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.innerHTML = `
+                    <span>@${suggestion}</span>
+                    <button class="copy-btn" onclick="copyToClipboard('${suggestion}')">Salin</button>
+                `;
+                item.addEventListener('click', () => {
+                    document.getElementById('usernameInput').value = suggestion;
+                });
+                suggestionsList.appendChild(item);
+            });
+            
+            suggestionsDiv.style.display = 'block';
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show temporary feedback
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'Disalin!';
+                button.style.background = '#4CAF50';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#667eea';
+                }, 1000);
+            });
+        }
+    </script>
+</body>
+</html>
