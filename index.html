@@ -308,40 +308,79 @@
             suggestionsDiv.style.display = 'none';
 
             try {
-                // Use a CORS proxy to check Instagram
-                const proxyUrl = 'https://api.allorigins.win/get?url=';
-                const instagramUrl = `https://instagram.com/${username}/`;
-                const response = await fetch(proxyUrl + encodeURIComponent(instagramUrl));
-                const data = await response.json();
+                // Method 1: Try multiple CORS proxies for better accuracy
+                const proxies = [
+                    'https://api.allorigins.win/get?url=',
+                    'https://corsproxy.io/?',
+                    'https://cors-anywhere.herokuapp.com/'
+                ];
                 
-                if (response.ok && data.contents) {
-                    // Check if the page contains profile data
-                    const pageContent = data.contents.toLowerCase();
-                    
-                    // Check for "page isn't available" or error messages first
-                    if (pageContent.includes("sorry, this page isn't available") ||
-                        pageContent.includes("page not found") ||
-                        pageContent.includes("user not found") ||
-                        pageContent.includes("this account doesn't exist") ||
-                        pageContent.includes("page isn't available")) {
+                let success = false;
+                let isValid = false;
+                
+                for (let proxy of proxies) {
+                    try {
+                        const instagramUrl = `https://instagram.com/${username}/`;
+                        const response = await fetch(proxy + encodeURIComponent(instagramUrl), {
+                            method: 'GET',
+                            headers: {
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                            }
+                        });
                         
-                        showResult(`❌ Username "${username}" tidak valid atau tidak exist!`, 'invalid');
-                    } 
-                    // Then check for valid profile indicators
-                    else if (pageContent.includes('"ProfilePage"') || 
-                        pageContent.includes('profilepage') ||
-                        pageContent.includes('followers') ||
-                        pageContent.includes('following') ||
-                        pageContent.includes('biography') ||
-                        (pageContent.includes(username) && pageContent.includes('instagram'))) {
-                        
+                        if (response.ok) {
+                            let pageContent = '';
+                            
+                            if (proxy.includes('allorigins')) {
+                                const data = await response.json();
+                                pageContent = data.contents || '';
+                            } else {
+                                pageContent = await response.text();
+                            }
+                            
+                            pageContent = pageContent.toLowerCase();
+                            
+                            // More specific checks
+                            if (pageContent.includes('sorry, this page isn\'t available') ||
+                                pageContent.includes('page isn\'t available') ||
+                                pageContent.includes('page not found') ||
+                                pageContent.includes('user not found') ||
+                                pageContent.includes('this account doesn\'t exist') ||
+                                pageContent.includes('link you followed may be broken') ||
+                                (pageContent.includes('instagram') && pageContent.includes('error'))) {
+                                
+                                isValid = false;
+                                success = true;
+                                break;
+                            }
+                            else if (pageContent.includes('profilepage') ||
+                                    pageContent.includes('biography') ||
+                                    pageContent.includes('followers') ||
+                                    pageContent.includes('following') ||
+                                    (pageContent.includes(username) && 
+                                     (pageContent.includes('posts') || pageContent.includes('profile')))) {
+                                
+                                isValid = true;
+                                success = true;
+                                break;
+                            }
+                        }
+                    } catch (proxyError) {
+                        console.log(`Proxy ${proxy} failed:`, proxyError);
+                        continue;
+                    }
+                }
+                
+                if (success) {
+                    if (isValid) {
                         showResult(`✅ Username "${username}" valid dan exist!`, 'valid');
-                        showProfileInfo(pageContent, username);
+                        showProfileInfo('', username);
                     } else {
                         showResult(`❌ Username "${username}" tidak valid atau tidak exist!`, 'invalid');
                     }
                 } else {
-                    showResult('❌ Username tidak dapat divalidasi. Kemungkinan tidak exist.', 'invalid');
+                    // Fallback: Try direct method
+                    showResult(`⚠️ Tidak dapat memvalidasi "${username}". Coba cek manual di Instagram.`, 'error');
                 }
             } catch (error) {
                 console.error('Error validating username:', error);
@@ -374,16 +413,28 @@
                 { label: 'Username', value: `@${username}`, icon: '👤' },
                 { label: 'Profile URL', value: `https://instagram.com/${username}`, icon: '🔗' },
                 { label: 'Status', value: 'Profile Valid & Active', icon: '✅' },
-                { label: 'Platform', value: 'Instagram', icon: '📷' }
+                { label: 'Platform', value: 'Instagram', icon: '📷' },
+                { label: 'Manual Check', value: 'Klik untuk verifikasi manual', icon: '🔍' }
             ];
             
             profileItems.forEach(item => {
                 const element = document.createElement('div');
                 element.className = 'suggestion-item';
-                element.innerHTML = `
-                    <span>${item.icon} <strong>${item.label}:</strong> ${item.value}</span>
-                    ${item.label === 'Profile URL' ? `<button class="copy-btn" onclick="copyToClipboard('${item.value}')">Salin URL</button>` : ''}
-                `;
+                
+                if (item.label === 'Manual Check') {
+                    element.innerHTML = `
+                        <span>${item.icon} <strong>${item.label}:</strong> ${item.value}</span>
+                        <button class="copy-btn" onclick="window.open('https://instagram.com/${username}', '_blank')">Buka</button>
+                    `;
+                } else if (item.label === 'Profile URL') {
+                    element.innerHTML = `
+                        <span>${item.icon} <strong>${item.label}:</strong> ${item.value}</span>
+                        <button class="copy-btn" onclick="copyToClipboard('${item.value}')">Salin URL</button>
+                    `;
+                } else {
+                    element.innerHTML = `<span>${item.icon} <strong>${item.label}:</strong> ${item.value}</span>`;
+                }
+                
                 suggestionsList.appendChild(element);
             });
             
