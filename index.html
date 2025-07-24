@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram Username Checker</title>
+    <title>Instagram Username Validator</title>
     <style>
         * {
             margin: 0;
@@ -319,12 +318,22 @@
                     // Check if the page contains profile data
                     const pageContent = data.contents.toLowerCase();
                     
-                    if (pageContent.includes('"ProfilePage"') || 
-                        pageContent.includes('"user"') || 
+                    // Check for "page isn't available" or error messages first
+                    if (pageContent.includes("sorry, this page isn't available") ||
+                        pageContent.includes("page not found") ||
+                        pageContent.includes("user not found") ||
+                        pageContent.includes("this account doesn't exist") ||
+                        pageContent.includes("page isn't available")) {
+                        
+                        showResult(`❌ Username "${username}" tidak valid atau tidak exist!`, 'invalid');
+                    } 
+                    // Then check for valid profile indicators
+                    else if (pageContent.includes('"ProfilePage"') || 
+                        pageContent.includes('profilepage') ||
                         pageContent.includes('followers') ||
                         pageContent.includes('following') ||
                         pageContent.includes('biography') ||
-                        (pageContent.includes('instagram') && !pageContent.includes('page not found'))) {
+                        (pageContent.includes(username) && pageContent.includes('instagram'))) {
                         
                         showResult(`✅ Username "${username}" valid dan exist!`, 'valid');
                         showProfileInfo(pageContent, username);
